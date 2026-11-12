@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -74,5 +75,16 @@ func TestDeviceStartMeAndCredits(t *testing.T) {
 	me.Credits.Mode, me.Credits.DailyRemaining, me.Credits.DailyLimit = "daily", 12, 20
 	if me.CreditsText() != "12 of 20 free credits left today" {
 		t.Fatalf("daily: %q", me.CreditsText())
+	}
+}
+
+func TestTrialUsedUpHint(t *testing.T) {
+	e := &Error{Status: 402, Code: "CLI_TRIAL_USED", Message: "Your free CLI credits are used up."}
+	if h := e.Hint(); !strings.Contains(h, "10 free CLI credits") || !strings.Contains(h, "/pricing") {
+		t.Fatalf("hint = %q", h)
+	}
+	e = &Error{Status: 402, Code: "API_CREDITS_REQUIRED", Message: "The API and AI apps need credits."}
+	if h := e.Hint(); !strings.Contains(h, "runconvert login") {
+		t.Fatalf("hint = %q", h)
 	}
 }

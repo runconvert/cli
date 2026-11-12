@@ -66,6 +66,10 @@ func (e *Error) Hint() string {
 	switch {
 	case e.Status == http.StatusUnauthorized:
 		return "Check your API key: runconvert login, or set RUNCONVERT_API_KEY. Keys are at https://www.runconvert.com/dashboard."
+	case e.Code == "CLI_TRIAL_USED":
+		return "Your 10 free CLI credits are used up. Buy credits (from 500) at https://www.runconvert.com/pricing, then run the same command again."
+	case e.Code == "API_CREDITS_REQUIRED":
+		return "This API key needs credits. Sign in with runconvert login for 10 free credits, or buy credits at https://www.runconvert.com/pricing."
 	case e.Status == http.StatusPaymentRequired || strings.Contains(e.Code, "CREDIT"):
 		return "Your team is out of credits. Top up at https://www.runconvert.com/pricing."
 	case e.Status == http.StatusTooManyRequests:
