@@ -22,7 +22,8 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
-    name_template: "runconvert_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    # No version in the name, so .../releases/latest/download/<name> always works (install scripts).
+    name_template: "runconvert_{{ .Os }}_{{ .Arch }}"
     files: [README.md]
 
 checksum:
@@ -30,3 +31,40 @@ checksum:
 
 snapshot:
   version_template: "{{ incpatch .Version }}-dev+{{ .ShortCommit }}"
+
+# Package managers. Written to dist/ on every release; skip_upload stays true
+# while the repo is private (release downloads aren't public). When it goes
+# public: create runconvert/homebrew-tap and runconvert/scoop-bucket, add the
+# HOMEBREW_TAP_TOKEN secret, and set skip_upload: false.
+homebrew_casks:
+  - name: runconvert
+    repository:
+      owner: runconvert
+      name: homebrew-tap
+      token: "{{ envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}"
+    homepage: https://www.runconvert.com/cli
+    description: Convert files between 3,000+ formats from the terminal and AI apps (MCP)
+    skip_upload: true
+
+scoops:
+  - name: runconvert
+    repository:
+      owner: runconvert
+      name: scoop-bucket
+      token: "{{ envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}"
+    homepage: https://www.runconvert.com/cli
+    description: Convert files between 3,000+ formats from the terminal and AI apps (MCP)
+    skip_upload: true
+
+winget:
+  - name: RunConvert CLI
+    package_identifier: RunConvert.CLI
+    publisher: RunConvert
+    publisher_url: https://www.runconvert.com
+    short_description: Convert files between 3,000+ formats from the terminal and AI apps (MCP)
+    homepage: https://www.runconvert.com/cli
+    repository:
+      owner: runconvert
+      name: winget-pkgs
+      token: "{{ envOrDefault \"HOMEBREW_TAP_TOKEN\" \"\" }}"
+    skip_upload: true
