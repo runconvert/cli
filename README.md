@@ -4,6 +4,26 @@ Convert files between 3,000+ formats from the terminal with
 [RunConvert](https://www.runconvert.com): video, audio, images, documents,
 ebooks, presentations, spreadsheets, vector, CAD, archives and fonts.
 
+## The app
+
+Run `runconvert` on its own in a terminal:
+
+1. **Drag a file or folder in**, press **Ctrl+O** to pick files in a window, or
+   `/browse` inside the terminal (servers, SSH).
+2. **Pick a format**: every format the file converts to, popular first, then
+   grouped by category. 1–5, arrow keys, or type to filter (`ti` → TIFF).
+3. **Tab** opens the options (quality, size, bitrate…) built from what the API
+   accepts; they're remembered for next time.
+4. When it's done: open the folder, convert again, or every file like it.
+
+A folder shows one row per kind of file (only the biggest group starts on;
+Space includes subfolders). Typing works too: `photo.heic to jpg`,
+`all videos in ~/Movies to mp4`, `talk.mp4 to mp3 192k`. `/help` lists the
+commands.
+
+On servers and in CI the app never opens: piped, without a terminal, or with
+`--no-input` / `RUNCONVERT_NO_INPUT=1`, `runconvert` prints help.
+
 ## Sign in
 
 ```bash
@@ -57,11 +77,13 @@ and Linux (amd64, arm64) with GoReleaser.
 | `internal/auth` | where the API key is kept |
 | `internal/catalog` | categories, formats grouped, typed options |
 | `internal/engine` | files/folders/URLs → upload → convert → download |
+| `internal/intent` | "photo.heic to jpg" → a conversion |
+| `internal/tui` | the app (Bubble Tea v2) |
 
 ## Roadmap
 
-1. **Phase 1 (this)**: engine and commands.
-2. Interactive app (`runconvert` on its own): drag or pick files, every format, options.
+1. Phase 1: engine and commands.
+2. **Phase 2 (this)**: the app: drag or pick files, every format, options.
 3–4. Sign in through the website (`runconvert login` opens the browser).
 5. MCP for Claude, ChatGPT and Cursor.
 6. `/cli` page on runconvert.com, npm, install script, first release.
