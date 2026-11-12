@@ -12,7 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/zalando/go-keyring"
 
 	"github.com/runconvert/cli/internal/api"
@@ -402,5 +404,41 @@ func TestLogoutDoesNotOpenTheBrowser(t *testing.T) {
 	// /exit quits even while signed out.
 	if _, cmd = m.submitLine("/exit"); cmd == nil {
 		t.Fatal("/exit should quit")
+	}
+}
+
+func TestSignedOutTypingIsReadableAndKeysAreHidden(t *testing.T) {
+	m, _ := setup(t)
+	m, _ = m.submitLine("/logout")
+	m, _ = send(t, m, key("/"), key("l"), key("o"))
+	if m.in.EchoMode != textinput.EchoNormal || !strings.Contains(m.View().Content, "/lo") {
+		t.Fatalf("/login must be visible while typing, echo %v", m.in.EchoMode)
+	}
+	m.in.SetValue("")
+	m, _ = send(t, m, tea.PasteMsg{Content: "rc_live_secret"})
+	if m.in.EchoMode != textinput.EchoPassword || strings.Contains(m.View().Content, "rc_live_secret") {
+		t.Fatal("a pasted key must be hidden")
+	}
+}
+
+func TestInputBoxStaysNarrowInWideWindows(t *testing.T) {
+	m, _ := setup(t)
+	m, _ = send(t, m, tea.WindowSizeMsg{Width: 270, Height: 70})
+	for _, line := range strings.Split(m.View().Content, "\n") {
+		if w := lipgloss.Width(line); w > maxInputWidth+2 {
+			t.Fatalf("a %d-column line in a 270-column window: %q", w, line)
+		}
+	}
+}
+
+func TestShrinkingBelowTheDrawingClears(t *testing.T) {
+	m, _ := setup(t)
+	m, _ = send(t, m, tea.WindowSizeMsg{Width: 200, Height: 40})
+	if _, cmd := m.Update(tea.WindowSizeMsg{Width: 150, Height: 40}); cmd != nil {
+		t.Fatal("shrinking while everything still fits shouldn't clear")
+	}
+	_, cmd := m.Update(tea.WindowSizeMsg{Width: 50, Height: 40})
+	if cmd == nil {
+		t.Fatal("shrinking below the drawing should move up over the re-wrapped rows")
 	}
 }

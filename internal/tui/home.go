@@ -90,6 +90,7 @@ func (m Model) homeKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	var cmd tea.Cmd
 	m.in, cmd = m.in.Update(k)
+	m.syncEcho()
 	m.last = nil // typing dismisses the next steps
 	// A drop without bracketed paste arrives as keystrokes a few
 	// microseconds apart. When the whole input came in such a burst, check it
@@ -119,6 +120,7 @@ func (m Model) paste(text string) (tea.Model, tea.Cmd) {
 	if m.mode == home || m.mode == askKey || m.mode == picking {
 		m.in.SetValue(m.in.Value() + text)
 		m.in.CursorEnd()
+		m.syncEcho()
 	}
 	return m, nil
 }
