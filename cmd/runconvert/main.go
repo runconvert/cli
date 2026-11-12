@@ -1,0 +1,66 @@
+// Command runconvert converts files with RunConvert from the terminal.
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"os/signal"
+	"runtime"
+	"syscall"
+
+	"github.com/spf13/cobra"
+
+	"github.com/runconvert/cli/internal/api"
+	"github.com/runconvert/cli/internal/auth"
+)
+
+// version is set at build time: -ldflags "-X main.version=1.0.0".
+var version = "dev"
+
+var keyFlag string
+
+func userAgent() string {
+	return fmt.Sprintf("runconvert-cli/%s (%s/%s)", version, runtime.GOOS, runtime.GOARCH)
+}
+
+// client returns an API client; needKey makes a missing key an error.
+func client(needKey bool) (*api.Client, error) {
+	key := auth.Key(keyFlag)
+	if needKey && key == "" {
+		return nil, errors.New("not signed in. Run `runconvert login`, or set RUNCONVERT_API_KEY (keys: https://www.runconvert.com/dashboard)")
+	}
+	return api.New(key, userAgent()), nil
+}
+
+func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	root := &cobra.Command{
+		Use:   "runconvert",
+		Short: "Convert files between 3,000+ formats with RunConvert",
+		Long: "Convert video, audio, images, documents, ebooks, fonts, CAD and archives with RunConvert.\n\n" +
+			"Quick start:\n" +
+			"  runconvert login\n" +
+			"  runconvert convert photo.heic --to jpg\n" +
+			"  runconvert formats            (what converts to what)\n\n" +
+			"More help: runconvert help paths | help options | help env",
+		Version:       version,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+	}
+	root.PersistentFlags().StringVar(&keyFlag, "key", "", "API key (default: RUNCONVERT_API_KEY, then the saved one)")
+	root.SuggestionsMinimumDistance = 2
+	root.AddCommand(convertCmd(), formatsCmd(), jobsCmd(), loginCmd(), logoutCmd())
+	root.AddCommand(helpTopics()...)
+
+	if err := root.ExecuteContext(ctx); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		if e, ok := api.IsAPIError(err); ok && e.Hint() != "" {
+			fmt.Fprintln(os.Stderr, e.Hint())
+		}
+		os.Exit(1)
+	}
+}

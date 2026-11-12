@@ -1,0 +1,29 @@
+# Every push and pull request: vet, test, and build all six binaries
+# (attached to the run for 7 days).
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-go@v5
+        with: { go-version-file: go.mod }
+      - run: go vet ./...
+      - run: go test ./...
+      - uses: goreleaser/goreleaser-action@v6
+        with: { distribution: goreleaser, version: "~> v2", args: build --snapshot --clean }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runconvert-${{ github.sha }}
+          path: dist/runconvert_*/runconvert*
+          retention-days: 7
