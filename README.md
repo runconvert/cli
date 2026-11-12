@@ -4,6 +4,19 @@ Convert files between 3,000+ formats from the terminal with
 [RunConvert](https://www.runconvert.com): video, audio, images, documents,
 ebooks, presentations, spreadsheets, vector, CAD, archives and fonts.
 
+## Install
+
+```bash
+curl -fsSL https://www.runconvert.com/install.sh | sh     # macOS, Linux
+irm https://www.runconvert.com/install.ps1 | iex          # Windows (PowerShell)
+npm i -g runconvert                                       # or: npx runconvert
+```
+
+The scripts (in `scripts/`) download the latest release, check it against
+`checksums.txt`, and install to `~/.local/bin` (Windows:
+`%LOCALAPPDATA%\runconvert\bin`, added to PATH). `RUNCONVERT_VERSION` pins a
+version, `RUNCONVERT_INSTALL_DIR` changes the folder.
+
 ## The app
 
 Run `runconvert` on its own in a terminal:
@@ -93,8 +106,11 @@ go test ./...                   # every test uses local fakes, no API key needed
 go build -o runconvert ./cmd/runconvert
 ```
 
-Releases: tag `vX.Y.Z`; `.github/workflows/release.yml` builds macOS, Windows
-and Linux (amd64, arm64) with GoReleaser.
+Releases: tag `vX.Y.Z`. `.github/workflows/release.yml` builds macOS, Windows
+and Linux (amd64, arm64) as `runconvert_<os>_<arch>.tar.gz/.zip` (no version
+in the name, so `releases/latest/download/…` works), publishes npm when the
+`NPM_TOKEN` secret is set, and pushes the MCP image. Homebrew, Scoop and winget
+files are written but not uploaded while the repo is private.
 
 ## Layout
 
@@ -115,5 +131,5 @@ and Linux (amd64, arm64) with GoReleaser.
 2. Phase 2: the app: drag or pick files, every format, options.
 3. Phase 3 (backend): device sign-in and `GET /v3/me`.
 4. Phase 4: `runconvert login` through the website, `whoami`, account line in the app.
-5. **Phase 5 (this)**: MCP for Claude, ChatGPT, Cursor and VS Code.
-6. `/cli` page on runconvert.com, npm, install script, first release.
+5. Phase 5: MCP for Claude, ChatGPT, Cursor and VS Code.
+6. **Phase 6 (this)**: install scripts, npm, package-manager files; `/cli` page on runconvert.com.
