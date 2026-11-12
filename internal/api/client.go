@@ -300,6 +300,135 @@ func (c *Client) Outputs(ctx context.Context, input string) (*InputFormat, error
 	return &f, err
 }
 
+// ── Account ───────────────────────────────────────────────────────────────
+
+// Me is GET /v3/me: who the key belongs to, the team and its credits.
+type Me struct {
+	User struct {
+		Email    string `json:"email"`
+		FullName string `json:"full_name"`
+	} `json:"user"`
+	Team struct {
+		Name string `json:"name"`
+	} `json:"team"`
+	APIKey *struct {
+		Name string `json:"name"`
+	} `json:"api_key"`
+	Credits *struct {
+		Mode           string `json:"mode"` // daily | wallet
+		DailyLimit     int64  `json:"daily_limit"`
+		DailyRemaining int64  `json:"daily_remaining"`
+		TotalRemaining int64  `json:"total_remaining"`
+	} `json:"credits"`
+}
+
+func (c *Client) Me(ctx context.Context) (*Me, error) {
+	var m Me
+	err := c.do(ctx, http.MethodGet, "/v3/me", nil, &m)
+	return &m, err
+}
+
+// CreditsText describes the credits left: "1,240 credits" or "12 of 20 today".
+func (m *Me) CreditsText() string {
+	if m.Credits == nil {
+		return ""
+	}
+	if m.Credits.Mode == "daily" {
+		return fmt.Sprintf("%s of %s free credits left today", comma(m.Credits.DailyRemaining), comma(m.Credits.DailyLimit))
+	}
+	return comma(m.Credits.TotalRemaining) + " credits"
+}
+
+func comma(n int64) string {
+	s := fmt.Sprint(n)
+	for i := len(s) - 3; i > 0 && s[i-1] != '-'; i -= 3 {
+		s = s[:i] + "," + s[i:]
+	}
+	return s
+}
+
+// ── Device sign-in (OAuth device flow, runconvert login) ──────────────────
+
+// ClientID is the CLI's OAuth client, known to the API without registration.
+const ClientID = "runconvert-cli"
+
+type DeviceCode struct {
+	DeviceCode              string `json:"device_code"`
+	UserCode                string `json:"user_code"`
+	VerificationURI         string `json:"verification_uri"`
+	VerificationURIComplete string `json:"verification_uri_complete"`
+	ExpiresIn               int    `json:"expires_in"`
+	Interval                int    `json:"interval"`
+}
+
+// OAuthError is an OAuth error answer, e.g. authorization_pending.
+type OAuthError struct{ Code, Description string }
+
+func (e *OAuthError) Error() string {
+	if e.Description != "" {
+		return e.Description
+	}
+	return e.Code
+}
+
+// form POSTs a form to an OAuth endpoint, which answers in OAuth's own JSON
+// (not the API's envelope).
+func (c *Client) form(ctx context.Context, path string, vals url.Values, out any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+path, strings.NewReader(vals.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.UserAgent)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode >= 400 {
+		var e struct {
+			Error       any    `json:"error"`
+			Description string `json:"error_description"`
+		}
+		_ = json.Unmarshal(raw, &e)
+		if code, ok := e.Error.(string); ok && code != "" {
+			return &OAuthError{Code: code, Description: e.Description}
+		}
+		if m, ok := e.Error.(map[string]any); ok { // the API's envelope
+			msg, _ := m["message"].(string)
+			code, _ := m["code"].(string)
+			return &Error{Status: resp.StatusCode, Code: code, Message: msg}
+		}
+		return &Error{Status: resp.StatusCode, Message: fmt.Sprintf("sign-in failed (HTTP %d)", resp.StatusCode)}
+	}
+	return json.Unmarshal(raw, out)
+}
+
+// StartDevice asks for a code to show (POST /v3/oauth/device).
+func (c *Client) StartDevice(ctx context.Context, deviceName string) (*DeviceCode, error) {
+	var d DeviceCode
+	err := c.form(ctx, "/v3/oauth/device", url.Values{"client_id": {ClientID}, "scope": {"convert"}, "device_name": {deviceName}}, &d)
+	return &d, err
+}
+
+// DeviceToken checks once whether the code was approved; an *OAuthError says
+// authorization_pending, slow_down, access_denied or expired_token.
+func (c *Client) DeviceToken(ctx context.Context, deviceCode string) (string, error) {
+	var t struct {
+		AccessToken string `json:"access_token"`
+	}
+	err := c.form(ctx, "/v3/oauth/token", url.Values{
+		"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
+		"device_code": {deviceCode}, "client_id": {ClientID},
+	}, &t)
+	return t.AccessToken, err
+}
+
 // Catalog lists the categories and every input format, or only one
 // category's formats (no API key needed).
 func (c *Client) Catalog(ctx context.Context, category string) ([]string, []InputFormat, error) {
