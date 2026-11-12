@@ -16,6 +16,8 @@ import (
 	"charm.land/bubbles/v2/filepicker"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/runconvert/cli/internal/api"
 	"github.com/runconvert/cli/internal/catalog"
@@ -83,7 +85,8 @@ func New(c *api.Client, version string) Model {
 	ti.Prompt = "› "
 	ti.Placeholder = placeholder
 	ti.CharLimit = 8192
-	ti.SetWidth(92) // until the terminal reports its size
+	ti.SetWidth(maxInputWidth - 6) // until the terminal reports its size
+	ti.SetVirtualCursor(false)     // a real terminal cursor (see View)
 	ti.Focus()
 	m := Model{c: c, cat: catalog.NewCache(c), version: version, t: newTheme(startDark()), in: ti,
 		active: map[int]*progressRow{}, jobIDs: map[string]bool{}, width: 100}
@@ -107,8 +110,41 @@ func Run(ctx context.Context, c *api.Client, version string) error {
 func (m *Model) toKeyMode() {
 	m.mode = askKey
 	m.in.Placeholder = "waiting for the browser… or paste an API key (rc_live_…)"
-	m.in.EchoMode = textinput.EchoPassword
+	m.in.EchoMode = textinput.EchoNormal
 	m.in.EchoCharacter = '•'
+}
+
+// maxInputWidth keeps the input box well inside wide windows: lines as wide
+// as the window get re-wrapped by the terminal when it is made narrower,
+// leaving broken boxes behind.
+const maxInputWidth = 80
+
+// rewrapRows is how many rows the terminal adds above the cursor when the
+// drawn view is re-wrapped to width w. Without a cursor (screens with no
+// input) the renderer leaves it on the last line.
+func rewrapRows(view string, cur *tea.Cursor, w int) int {
+	lines := strings.Split(strings.TrimRight(view, "\n"), "\n")
+	row := len(lines) - 1
+	if cur != nil {
+		row = min(cur.Y, row)
+	}
+	extra := 0
+	for _, l := range lines[:row] {
+		if lw := lipgloss.Width(l); lw > w {
+			extra += (lw - 1) / w
+		}
+	}
+	return extra
+}
+
+// syncEcho hides what's typed only when it's an API key (rc_…), so /login,
+// /help and the rest stay readable while signed out.
+func (m *Model) syncEcho() {
+	if m.mode == askKey && strings.HasPrefix(m.in.Value(), "rc_") {
+		m.in.EchoMode = textinput.EchoPassword
+	} else {
+		m.in.EchoMode = textinput.EchoNormal
+	}
 }
 
 func (m *Model) toHome() {
@@ -160,8 +196,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.t = newTheme(msg.IsDark())
 		return m, nil
 	case tea.WindowSizeMsg:
+		// Made narrower than what's drawn: the terminal re-wraps those lines
+		// onto extra rows, and the redraw (which goes back up only as many
+		// rows as it drew) would leave the top pieces behind. Move the cursor
+		// up by the extra rows first, so the redraw erases from the real top.
+		extra := 0
+		if m.width > 0 {
+			v := m.View()
+			extra = rewrapRows(v.Content, v.Cursor, msg.Width)
+		}
 		m.width, m.height = msg.Width, msg.Height
-		m.in.SetWidth(max(20, msg.Width-8))
+		m.in.SetWidth(min(maxInputWidth-6, max(20, msg.Width-10)))
+		if extra > 0 {
+			return m, tea.Raw(ansi.CursorUp(extra))
+		}
 		return m, nil
 	case tea.KeyPressMsg:
 		return m.key(msg)
@@ -314,10 +362,20 @@ func (m Model) View() tea.View {
 		}
 		b.WriteString(m.t.muted.Render(" "+status) + "\n")
 	}
-	w := max(30, m.width-2)
+	w := min(maxInputWidth, max(30, m.width-4))
+	above := strings.Count(b.String(), "\n")
 	b.WriteString(m.t.input.Width(w).Render(m.in.View()) + "\n")
 	b.WriteString(m.t.muted.Render(" " + m.hint()))
-	return tea.NewView(b.String())
+	v := tea.NewView(b.String())
+	// A real terminal cursor where you type (inside the box: border and
+	// padding). It also keeps the cursor on a known row, which the resize
+	// handling relies on.
+	if c := m.in.Cursor(); c != nil {
+		c.X += 2
+		c.Y = above + 1
+		v.Cursor = c
+	}
+	return v
 }
 
 func (m Model) hint() string {
