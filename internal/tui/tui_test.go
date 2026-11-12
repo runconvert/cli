@@ -13,8 +13,10 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/zalando/go-keyring"
 
 	"github.com/runconvert/cli/internal/api"
+	"github.com/runconvert/cli/internal/auth"
 	"github.com/runconvert/cli/internal/intent"
 )
 
@@ -92,6 +94,8 @@ func (f *fakeAPI) start(t *testing.T) {
 
 func setup(t *testing.T) (Model, *fakeAPI) {
 	t.Helper()
+	keyring.MockInit() // never touch the real system keychain
+	t.Setenv("RUNCONVERT_NO_BROWSER", "1")
 	f := &fakeAPI{}
 	f.start(t)
 	home := t.TempDir()
@@ -303,7 +307,9 @@ func TestHomeBasics(t *testing.T) {
 }
 
 func TestNoKeyAsksForOne(t *testing.T) {
+	keyring.MockInit()
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("RUNCONVERT_NO_BROWSER", "1")
 	m := New(api.New("", "test"), "test")
 	if m.mode != askKey {
 		t.Fatal("without a key, ask for one")
@@ -347,5 +353,28 @@ func TestDropAsFastKeystrokes(t *testing.T) {
 	}
 	if m.burstLen > 1 {
 		t.Fatalf("slow typing counted as a burst: %d", m.burstLen)
+	}
+}
+
+func TestSignInInsideTheApp(t *testing.T) {
+	m, _ := setup(t)
+	m.c.Key = ""
+	m.toKeyMode()
+	m, _ = send(t, m, deviceMsg(&api.DeviceCode{DeviceCode: "rcd_x", UserCode: "WXYZ-BCDF",
+		VerificationURI: "https://www.runconvert.com/cli/connect", VerificationURIComplete: "https://www.runconvert.com/cli/connect?code=WXYZ-BCDF", Interval: 5, ExpiresIn: 600}))
+	if m.device == nil || m.mode != askKey {
+		t.Fatalf("waiting for the browser: %+v", m.device)
+	}
+	m, cmd := send(t, m, keyOKMsg("rc_live_from_browser"))
+	if m.mode != home || m.c.Key != "rc_live_from_browser" || cmd == nil {
+		t.Fatalf("signed in: mode %v key %q", m.mode, m.c.Key)
+	}
+	if k := auth.Key(""); k != "rc_live_from_browser" {
+		t.Fatalf("the key should be saved, got %q", k)
+	}
+	// A second approval (browser and a pasted key) is ignored.
+	m2, _ := send(t, m, keyOKMsg("rc_live_other"))
+	if m2.c.Key != "rc_live_from_browser" {
+		t.Fatal("a late second sign-in must not replace the key")
 	}
 }

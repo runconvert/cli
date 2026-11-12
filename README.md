@@ -27,11 +27,17 @@ On servers and in CI the app never opens: piped, without a terminal, or with
 ## Sign in
 
 ```bash
-runconvert login            # paste a key from runconvert.com/dashboard → API keys
+runconvert login            # opens runconvert.com: sign in, check the code, Authorize
+runconvert login --no-browser   # servers and SSH: prints a link and a code
+runconvert login --with-key     # or paste a key from Dashboard → API keys
+runconvert whoami           # who you're signed in as, and your credits
 ```
 
-The key is saved in the system keychain (or a file only you can read on
-servers). In CI, set `RUNCONVERT_API_KEY` instead.
+Signing in makes an API key named "CLI · <this computer>", saved in the
+system keychain (or a file only you can read on servers). Revoke it in
+Dashboard → API keys; `runconvert logout` removes it from this computer.
+In CI, set `RUNCONVERT_API_KEY` instead. `RUNCONVERT_NO_BROWSER=1` never
+opens a browser.
 
 ## Convert
 
@@ -83,7 +89,8 @@ and Linux (amd64, arm64) with GoReleaser.
 ## Roadmap
 
 1. Phase 1: engine and commands.
-2. **Phase 2 (this)**: the app: drag or pick files, every format, options.
-3–4. Sign in through the website (`runconvert login` opens the browser).
+2. Phase 2: the app: drag or pick files, every format, options.
+3. Phase 3 (backend): device sign-in and `GET /v3/me`.
+4. **Phase 4 (this)**: `runconvert login` through the website, `whoami`, account line in the app.
 5. MCP for Claude, ChatGPT and Cursor.
 6. `/cli` page on runconvert.com, npm, install script, first release.

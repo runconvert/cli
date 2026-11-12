@@ -648,13 +648,13 @@ func (m Model) done(res []engine.Result) (tea.Model, tea.Cmd) {
 		}
 	}
 	if len(res) <= 1 && failed == 0 {
-		return m, nil
+		return m, m.fetchMe() // credits changed
 	}
 	sum := fmt.Sprintf("%d converted", ok)
 	if failed > 0 {
 		sum += fmt.Sprintf(", %d failed", failed)
 	}
-	return m, tea.Println(m.t.muted.Render("  " + sum + " in " + time.Since(m.started).Round(100*time.Millisecond).String()))
+	return m, tea.Batch(tea.Println(m.t.muted.Render("  "+sum+" in "+time.Since(m.started).Round(100*time.Millisecond).String())), m.fetchMe())
 }
 
 // ── Next steps ────────────────────────────────────────────────────────────

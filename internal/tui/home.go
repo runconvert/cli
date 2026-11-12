@@ -12,6 +12,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/runconvert/cli/internal/api"
 	"github.com/runconvert/cli/internal/auth"
 	"github.com/runconvert/cli/internal/engine"
 	"github.com/runconvert/cli/internal/intent"
@@ -26,7 +27,7 @@ var slashCommands = []struct{ name, help string }{
 	{"/formats", "categories; /formats video; /formats png; /formats heic jpg"},
 	{"/out", "where results go: /out ~/Desktop/converted · /out next"},
 	{"/jobs", "your recent conversions"},
-	{"/login", "use another API key"},
+	{"/login", "sign in again through the browser (or paste a key)"},
 	{"/logout", "remove the saved key"},
 	{"/clear", "clear the screen"},
 	{"/exit", "quit (Ctrl+C)"},
@@ -290,7 +291,63 @@ func (m Model) gotPlan(p plan) (tea.Model, tea.Cmd) {
 	return mm, tea.Sequence(append(cmds, start)...)
 }
 
-// ── Sign-in (browser sign-in replaces this in a later phase) ──────────────
+// ── Sign-in: through the browser (like Claude Code), or a pasted key ──────
+
+func (m Model) startSignIn() tea.Cmd {
+	c := *m.c
+	c.Key = ""
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		d, err := c.StartDevice(ctx, auth.DeviceName())
+		if e, ok := api.IsAPIError(err); ok && e.Status == 404 {
+			return errMsg{errors.New("signing in through the browser isn't available yet. Paste an API key from runconvert.com/dashboard → API keys")}
+		}
+		if err != nil {
+			return errMsg{fmt.Errorf("couldn't start signing in: %w. Paste an API key instead", err)}
+		}
+		return deviceMsg(d)
+	}
+}
+
+func (m Model) showCode(d *api.DeviceCode) (tea.Model, tea.Cmd) {
+	m.device = d
+	opened := auth.OpenBrowser(d.VerificationURIComplete)
+	where := "Open " + m.t.bold.Render(d.VerificationURIComplete) + " on any device, sign in and check the code:"
+	if opened {
+		where = "Opened runconvert.com in your browser. Sign in, check the code and click " + m.t.bold.Render("Authorize") + ":"
+	}
+	box := m.t.box.Render(strings.Join([]string{
+		m.t.accent.Render("Sign in to RunConvert"),
+		where,
+		"",
+		"    " + m.t.chip.Render(" "+d.UserCode+" "),
+		"",
+		m.t.muted.Render("Didn't open? Go to " + d.VerificationURI + " and enter the code."),
+	}, "\n"))
+	c := *m.c
+	c.Key = ""
+	return m, tea.Sequence(tea.Println(box), func() tea.Msg {
+		key, err := auth.WaitForApproval(context.Background(), &c, d)
+		if err != nil {
+			return errMsg{fmt.Errorf("%w. Type /login to try again, or paste an API key", err)}
+		}
+		return keyOKMsg(key)
+	})
+}
+
+func (m Model) fetchMe() tea.Cmd {
+	c := m.c
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		me, err := c.Me(ctx)
+		if err != nil {
+			return nil // the status line is a nicety; conversions don't need it
+		}
+		return meMsg(me)
+	}
+}
 
 func (m Model) checkKey(line string) (tea.Model, tea.Cmd) {
 	if !strings.HasPrefix(line, "rc_live_") {
@@ -309,13 +366,37 @@ func (m Model) checkKey(line string) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) signedIn(key string) (tea.Model, tea.Cmd) {
+	if m.mode != askKey {
+		return m, nil // already signed in (a pasted key and the browser both finished)
+	}
 	where, err := auth.SaveKey(key)
 	m.c.Key = key
+	m.device = nil
 	m.toHome()
+	c := m.c
+	t := m.t
+	saved := "Key saved in " + where + "."
 	if err != nil {
-		return m, tea.Println(m.t.ok.Render("✓ Signed in") + m.t.muted.Render(" (not saved: "+err.Error()+")"))
+		saved = "Key not saved: " + err.Error()
 	}
-	return m, tea.Println(m.t.ok.Render("✓ Signed in.") + m.t.muted.Render(" Key saved in "+where+". Now convert something great."))
+	return m, func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		me, err := c.Me(ctx)
+		line := t.ok.Render("✓ Signed in.")
+		if err == nil {
+			line = t.ok.Render("✓ Signed in as "+me.User.Email) + t.muted.Render(" · "+me.Team.Name)
+			if ct := me.CreditsText(); ct != "" {
+				line += t.muted.Render(" · " + ct)
+			}
+		}
+		return signedInMsg{me: me, line: line + "\n  " + t.muted.Render(saved+" Now drag a file in and convert something great.")}
+	}
+}
+
+type signedInMsg struct {
+	me   *api.Me
+	line string
 }
 
 // ── /commands ─────────────────────────────────────────────────────────────
@@ -364,12 +445,13 @@ func (m Model) slash(line string) (tea.Model, tea.Cmd) {
 		return m, tea.Println(m.t.ok.Render("✓ ") + "Results go " + m.whereText())
 	case "/login":
 		m.toKeyMode()
-		return m, tea.Println("  Paste your API key (rc_live_…).")
+		return m, m.startSignIn()
 	case "/logout":
 		_ = auth.Remove()
 		m.c.Key = ""
+		m.me = nil
 		m.toKeyMode()
-		return m, tea.Println(m.t.ok.Render("✓ ") + "Signed out. Paste a key to continue, or Ctrl+C to quit.")
+		return m, tea.Sequence(tea.Println(m.t.ok.Render("✓ ")+"Signed out on this computer."), m.startSignIn())
 	case "/formats":
 		t := m.t
 		return m, func() tea.Msg { return formatsText(c, cat, t, args) }

@@ -49,6 +49,7 @@ func main() {
 		Short: "Convert files between 3,000+ formats with RunConvert",
 		Long: "Convert video, audio, images, documents, ebooks, fonts, CAD and archives with RunConvert.\n\n" +
 			"Quick start:\n" +
+			"  runconvert login               sign in through runconvert.com\n" +
 			"  runconvert                     the app: drag files in, pick a format\n" +
 			"  runconvert convert photo.heic --to jpg   one command, for scripts and servers\n" +
 			"  runconvert formats             what converts to what\n\n" +
@@ -70,7 +71,7 @@ func main() {
 		}
 		return tui.Run(cmd.Context(), api.New(auth.Key(keyFlag), userAgent()), version)
 	}
-	root.AddCommand(convertCmd(), formatsCmd(), jobsCmd(), loginCmd(), logoutCmd())
+	root.AddCommand(convertCmd(), formatsCmd(), jobsCmd(), loginCmd(), logoutCmd(), whoamiCmd())
 	root.AddCommand(helpTopics()...)
 
 	if err := root.ExecuteContext(ctx); err != nil {

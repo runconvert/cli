@@ -54,6 +54,8 @@ type Model struct {
 	history []string
 	hist    int
 
+	me      *api.Me         // who's signed in, and credits (GET /v3/me)
+	device  *api.DeviceCode // a browser sign-in waiting for Authorize
 	sel     *selection
 	form    *optionsForm
 	plan    *plan
@@ -104,7 +106,7 @@ func Run(ctx context.Context, c *api.Client, version string) error {
 
 func (m *Model) toKeyMode() {
 	m.mode = askKey
-	m.in.Placeholder = "paste your API key (rc_live_…) from runconvert.com/dashboard → API keys"
+	m.in.Placeholder = "waiting for the browser… or paste an API key (rc_live_…)"
 	m.in.EchoMode = textinput.EchoPassword
 	m.in.EchoCharacter = '•'
 }
@@ -123,10 +125,12 @@ func (m Model) Init() tea.Cmd {
 		"Drag files in, press " + m.t.bold.Render("Ctrl+O") + " to pick, or type " + m.t.bold.Render("photo.heic to jpg"),
 		m.t.muted.Render("Results are saved next to the originals · /out to change · /help"),
 	}
-	if m.mode == askKey {
-		lines = append(lines, "", "First, your API key: create one at https://www.runconvert.com/dashboard → API keys.")
-	}
 	cmds := []tea.Cmd{tea.Println(m.t.box.Render(strings.Join(lines, "\n")))}
+	if m.mode == askKey {
+		cmds = append(cmds, m.startSignIn())
+	} else {
+		cmds = append(cmds, m.fetchMe())
+	}
 	if !forcedTheme() {
 		cmds = append(cmds, tea.RequestBackgroundColor)
 	}
@@ -136,16 +140,18 @@ func (m Model) Init() tea.Cmd {
 // ── Messages ──────────────────────────────────────────────────────────────
 
 type (
-	errMsg   struct{ err error }
-	printMsg string
-	keyOKMsg string
-	selMsg   selection
-	formMsg  optionsForm
-	planMsg  plan
-	eventMsg engine.Event
-	doneMsg  []engine.Result
-	pickMsg  []string // files chosen in the system's file window
-	dropMsg  string   // the input to check, once a fast burst of keys stops
+	errMsg    struct{ err error }
+	printMsg  string
+	keyOKMsg  string
+	selMsg    selection
+	formMsg   optionsForm
+	planMsg   plan
+	eventMsg  engine.Event
+	doneMsg   []engine.Result
+	pickMsg   []string // files chosen in the system's file window
+	dropMsg   string   // the input to check, once a fast burst of keys stops
+	meMsg     *api.Me
+	deviceMsg *api.DeviceCode
 )
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -170,6 +176,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Println(m.fail(msg.err))
 	case keyOKMsg:
 		return m.signedIn(string(msg))
+	case meMsg:
+		m.me = msg
+		return m, nil
+	case signedInMsg:
+		if msg.me != nil {
+			m.me = msg.me
+		}
+		return m, tea.Println(msg.line)
+	case deviceMsg:
+		return m.showCode(msg)
 	case dropMsg:
 		if m.mode == home && m.waiting == nil && m.in.Value() == string(msg) {
 			if paths, ok := allPaths(string(msg)); ok {
@@ -291,6 +307,13 @@ func (m Model) View() tea.View {
 			}
 		}
 	}
+	if m.me != nil && m.mode != askKey {
+		status := m.me.User.Email + " · " + m.me.Team.Name
+		if t := m.me.CreditsText(); t != "" {
+			status += " · " + t
+		}
+		b.WriteString(m.t.muted.Render(" "+status) + "\n")
+	}
 	w := max(30, m.width-2)
 	b.WriteString(m.t.input.Width(w).Render(m.in.View()) + "\n")
 	b.WriteString(m.t.muted.Render(" " + m.hint()))
@@ -304,7 +327,7 @@ func (m Model) hint() string {
 	case confirming:
 		return "Enter or y convert · n or Esc cancel"
 	case askKey:
-		return "Enter save key · Ctrl+C quit"
+		return "Authorize in the browser · or paste an API key and press Enter · Ctrl+C quit"
 	case loading:
 		return "Ctrl+C quit"
 	case picking:
