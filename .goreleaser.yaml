@@ -1,0 +1,32 @@
+# macOS, Windows and Linux (Intel and ARM) builds, released on v* tags.
+version: 2
+project_name: runconvert
+
+before:
+  hooks:
+    - go mod tidy
+    - go test -short ./...
+
+builds:
+  - id: runconvert
+    main: ./cmd/runconvert
+    binary: runconvert
+    env: [CGO_ENABLED=0]
+    goos: [darwin, windows, linux]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: ["-s -w -X main.version={{ .Version }}"]
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "runconvert_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files: [README.md]
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-dev+{{ .ShortCommit }}"
