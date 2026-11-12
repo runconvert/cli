@@ -327,6 +327,9 @@ func (m Model) hint() string {
 	case confirming:
 		return "Enter or y convert · n or Esc cancel"
 	case askKey:
+		if m.device == nil {
+			return "/login sign in through the browser · or paste an API key · Ctrl+C quit"
+		}
 		return "Authorize in the browser · or paste an API key and press Enter · Ctrl+C quit"
 	case loading:
 		return "Ctrl+C quit"

@@ -378,3 +378,29 @@ func TestSignInInsideTheApp(t *testing.T) {
 		t.Fatal("a late second sign-in must not replace the key")
 	}
 }
+
+func TestLogoutDoesNotOpenTheBrowser(t *testing.T) {
+	m, _ := setup(t)
+	m, cmd := m.submitLine("/logout")
+	if m.mode != askKey || m.device != nil || m.c.Key != "" {
+		t.Fatalf("signed out: mode %v device %v", m.mode, m.device)
+	}
+	// Only a print: no sign-in started (which would open the browser).
+	if msg := cmd(); msg != nil {
+		if _, started := msg.(deviceMsg); started {
+			t.Fatal("logout must not start a browser sign-in")
+		}
+	}
+	if !strings.Contains(m.hint(), "/login") {
+		t.Fatalf("hint should offer /login: %q", m.hint())
+	}
+	// /login (not a key) starts it.
+	m, cmd = m.submitLine("/login")
+	if cmd == nil || m.mode != askKey {
+		t.Fatal("/login should start signing in")
+	}
+	// /exit quits even while signed out.
+	if _, cmd = m.submitLine("/exit"); cmd == nil {
+		t.Fatal("/exit should quit")
+	}
+}

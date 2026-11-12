@@ -142,6 +142,17 @@ func allPaths(text string) ([]string, bool) {
 
 func (m Model) submit(line string) (tea.Model, tea.Cmd) {
 	if m.mode == askKey {
+		switch strings.ToLower(strings.TrimSpace(line)) {
+		case "/login":
+			m.in.Placeholder = "waiting for the browser… or paste an API key (rc_live_…)"
+			return m, m.startSignIn()
+		case "/exit", "/quit", "/q":
+			return m, tea.Quit
+		case "/help", "/?":
+			return m, tea.Println(m.t.muted.Render("  Not signed in. /login signs in through runconvert.com; or paste an API key from Dashboard → API keys. Ctrl+C quits."))
+		case "":
+			return m, nil
+		}
 		return m.checkKey(line)
 	}
 	if line == "" {
@@ -450,8 +461,10 @@ func (m Model) slash(line string) (tea.Model, tea.Cmd) {
 		_ = auth.Remove()
 		m.c.Key = ""
 		m.me = nil
+		m.device = nil
 		m.toKeyMode()
-		return m, tea.Sequence(tea.Println(m.t.ok.Render("✓ ")+"Signed out on this computer."), m.startSignIn())
+		m.in.Placeholder = "/login to sign in through the browser · or paste an API key (rc_live_…)"
+		return m, tea.Println(m.t.ok.Render("✓ ") + "Signed out on this computer. Type " + m.t.bold.Render("/login") + " to sign in again, or Ctrl+C to quit.")
 	case "/formats":
 		t := m.t
 		return m, func() tea.Msg { return formatsText(c, cat, t, args) }
