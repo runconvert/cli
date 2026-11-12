@@ -71,7 +71,7 @@ func main() {
 		}
 		return tui.Run(cmd.Context(), api.New(auth.Key(keyFlag), userAgent()), version)
 	}
-	root.AddCommand(convertCmd(), formatsCmd(), jobsCmd(), loginCmd(), logoutCmd(), whoamiCmd())
+	root.AddCommand(convertCmd(), formatsCmd(), jobsCmd(), loginCmd(), logoutCmd(), whoamiCmd(), mcpCmd())
 	root.AddCommand(helpTopics()...)
 
 	if err := root.ExecuteContext(ctx); err != nil {

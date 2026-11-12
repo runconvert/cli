@@ -64,6 +64,28 @@ runconvert formats heic jpg     # the settings (--opt) for one conversion
 runconvert jobs list            # recent conversions; jobs get / cancel <id>
 ```
 
+## AI apps (MCP)
+
+```bash
+runconvert mcp setup            # how to add it to Claude Code, Claude Desktop, Cursor, VS Code
+claude mcp add runconvert -- runconvert mcp
+```
+
+**Local** (`runconvert mcp`): converts files on this computer with the account
+you signed in with. **Remote** (`runconvert mcp --http :8080`, deployed at
+`mcp.runconvert.com`): Claude.ai and ChatGPT add
+`https://mcp.runconvert.com/mcp` as a connector and sign in with OAuth
+(runconvert/backend#2); it converts files from links, returns download
+links, and answers within 60 s (conversions still running come back with a
+job id for `get_job`, because Cloudflare ends requests at 100 s).
+
+Tools: `list_formats` (categories, a category's formats, a format's outputs,
+one conversion's options), `convert`, `get_job`, `account` (credits left).
+Read-only tools say so, as the Claude and ChatGPT directories require.
+
+The release workflow also publishes the remote server's image,
+`ghcr.io/runconvert/cli/mcp:<version>` (amd64 + arm64).
+
 ## Development
 
 ```bash
@@ -85,12 +107,13 @@ and Linux (amd64, arm64) with GoReleaser.
 | `internal/engine` | files/folders/URLs → upload → convert → download |
 | `internal/intent` | "photo.heic to jpg" → a conversion |
 | `internal/tui` | the app (Bubble Tea v2) |
+| `internal/mcpserver` | the MCP server (local stdio and remote HTTP) |
 
 ## Roadmap
 
 1. Phase 1: engine and commands.
 2. Phase 2: the app: drag or pick files, every format, options.
 3. Phase 3 (backend): device sign-in and `GET /v3/me`.
-4. **Phase 4 (this)**: `runconvert login` through the website, `whoami`, account line in the app.
-5. MCP for Claude, ChatGPT and Cursor.
+4. Phase 4: `runconvert login` through the website, `whoami`, account line in the app.
+5. **Phase 5 (this)**: MCP for Claude, ChatGPT, Cursor and VS Code.
 6. `/cli` page on runconvert.com, npm, install script, first release.
