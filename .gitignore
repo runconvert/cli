@@ -1,0 +1,4 @@
+dist/
+/runconvert
+/runconvert.exe
+.DS_Store
