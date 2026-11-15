@@ -1,5 +1,7 @@
 # runconvert
 
+> **Not released yet.** The first release is coming soon; until then the install commands below won't work. Updates: https://www.runconvert.com/cli
+
 Convert files between 3,000+ formats from the terminal with
 [RunConvert](https://www.runconvert.com): video, audio, images, documents,
 ebooks, presentations, spreadsheets, vector, CAD, archives and fonts.
