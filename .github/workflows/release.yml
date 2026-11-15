@@ -6,13 +6,13 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write # npm trusted publishing
 jobs:
   release:
     runs-on: ubuntu-latest
     # Waits for approval from a required reviewer of the "release" environment.
     environment: release
     env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
     steps:
       - uses: actions/checkout@v4
@@ -26,20 +26,15 @@ jobs:
       - name: Version
         id: v
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-      # npm: `runconvert` plus one package per platform, when NPM_TOKEN is set.
+      # npm: @runconvert/cli plus one package per platform, with npm trusted publishing (OIDC, no token).
+      # Each of the 7 packages has this repo + release.yml + the "release" environment as its trusted publisher.
       - uses: actions/setup-node@v4
-        if: env.NPM_TOKEN != ''
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@latest # trusted publishing needs npm 11.5.1+
       - name: Publish to npm
-        if: env.NPM_TOKEN != ''
         run: node npm/publish.mjs ${{ steps.v.outputs.version }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: npm skipped
-        if: env.NPM_TOKEN == ''
-        run: echo "::notice::NPM_TOKEN is not set, so npm publishing was skipped."
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3

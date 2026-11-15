@@ -37,7 +37,7 @@ const out = join(root, "dist", "npm")
 rmSync(out, { recursive: true, force: true })
 
 const publish = (dir) => {
-  const args = ["publish", "--access", "public"]
+  const args = ["publish", "--access", "public", ...(process.env.GITHUB_ACTIONS ? ["--provenance"] : [])]
   if (dryRun) args.push("--dry-run")
   if (version.includes("-")) args.push("--tag", "next")
   execFileSync("npm", args, { cwd: dir, stdio: "inherit" })
