@@ -9,7 +9,7 @@ ebooks, presentations, spreadsheets, vector, CAD, archives and fonts.
 ```bash
 curl -fsSL https://www.runconvert.com/install.sh | sh     # macOS, Linux
 irm https://www.runconvert.com/install.ps1 | iex          # Windows (PowerShell)
-npm i -g runconvert                                       # or: npx runconvert
+npm i -g @runconvert/cli                                  # or: npx @runconvert/cli
 ```
 
 The scripts (in `scripts/`) download the latest release, check it against
