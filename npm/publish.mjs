@@ -25,7 +25,7 @@ const CPU = { amd64: "x64", arm64: "arm64" }
 const meta = {
   version,
   license: "MIT",
-  repository: { type: "git", url: "git+https://github.com/runconvert/cli.git" },
+  repository: { type: "git", url: "git+https://github.com/runconvert/runconvert-cli.git" },
   homepage: "https://www.runconvert.com/docs",
 }
 

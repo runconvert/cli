@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/runconvert/cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/api"
 )
 
 // DeviceName is what the website shows and the key is named after:

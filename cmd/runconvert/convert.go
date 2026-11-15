@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/runconvert/cli/internal/catalog"
-	"github.com/runconvert/cli/internal/engine"
+	"github.com/runconvert/runconvert-cli/internal/catalog"
+	"github.com/runconvert/runconvert-cli/internal/engine"
 )
 
 func convertCmd() *cobra.Command {

@@ -13,8 +13,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/runconvert/cli/internal/api"
-	"github.com/runconvert/cli/internal/auth"
+	"github.com/runconvert/runconvert-cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/auth"
 )
 
 // field is one option on the options screen, with a control that suits what

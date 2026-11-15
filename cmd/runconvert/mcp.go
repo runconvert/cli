@@ -15,7 +15,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
 
-	"github.com/runconvert/cli/internal/mcpserver"
+	"github.com/runconvert/runconvert-cli/internal/mcpserver"
 )
 
 func mcpCmd() *cobra.Command {

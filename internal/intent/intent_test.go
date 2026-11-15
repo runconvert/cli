@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/runconvert/cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/api"
 )
 
 func TestTokenizeDraggedPaths(t *testing.T) {

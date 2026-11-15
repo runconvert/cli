@@ -10,7 +10,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/runconvert/cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/api"
 )
 
 func TestKeyFromRequest(t *testing.T) {

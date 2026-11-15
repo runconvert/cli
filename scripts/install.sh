@@ -8,7 +8,7 @@
 #   RUNCONVERT_DOWNLOAD_URL where releases are downloaded from
 set -eu
 
-repo_url=${RUNCONVERT_DOWNLOAD_URL:-https://github.com/runconvert/cli/releases}
+repo_url=${RUNCONVERT_DOWNLOAD_URL:-https://github.com/runconvert/runconvert-cli/releases}
 dir=${RUNCONVERT_INSTALL_DIR:-$HOME/.local/bin}
 
 say() { printf '%s\n' "$*"; }

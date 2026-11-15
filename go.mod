@@ -1,4 +1,4 @@
-module github.com/runconvert/cli
+module github.com/runconvert/runconvert-cli
 
 go 1.26.7
 

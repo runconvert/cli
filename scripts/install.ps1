@@ -5,7 +5,7 @@
 # $env:RUNCONVERT_DOWNLOAD_URL.
 $ErrorActionPreference = 'Stop'
 
-$repo = if ($env:RUNCONVERT_DOWNLOAD_URL) { $env:RUNCONVERT_DOWNLOAD_URL } else { 'https://github.com/runconvert/cli/releases' }
+$repo = if ($env:RUNCONVERT_DOWNLOAD_URL) { $env:RUNCONVERT_DOWNLOAD_URL } else { 'https://github.com/runconvert/runconvert-cli/releases' }
 $dir = if ($env:RUNCONVERT_INSTALL_DIR) { $env:RUNCONVERT_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'runconvert\bin' }
 $arch = if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq 'Arm64') { 'arm64' } else { 'amd64' }
 $base = if ($env:RUNCONVERT_VERSION) { "$repo/download/v$($env:RUNCONVERT_VERSION.TrimStart('v'))" } else { "$repo/latest/download" }

@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/runconvert/cli/internal/api"
-	"github.com/runconvert/cli/internal/catalog"
+	"github.com/runconvert/runconvert-cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/catalog"
 )
 
 // fakeAPI: heic and mov are known (image, video); jobs finish at once unless
