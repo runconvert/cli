@@ -1,5 +1,5 @@
 // Publishes runconvert to npm from a GoReleaser dist folder:
-//   one @runconvert/cli-<os>-<arch> package per binary, then the `runconvert`
+//   one @runconvert/cli-<os>-<arch> package per binary, then the `@runconvert/cli`
 //   launcher, which lists them as optionalDependencies so npm installs only
 //   the one for the user's computer.
 //
@@ -24,8 +24,8 @@ const OS = { darwin: "darwin", linux: "linux", windows: "win32" }
 const CPU = { amd64: "x64", arm64: "arm64" }
 const meta = {
   version,
-  // Until a licence is chosen and the repo is public (then: "MIT" and a repository URL).
-  license: "UNLICENSED",
+  license: "MIT",
+  repository: { type: "git", url: "git+https://github.com/runconvert/cli.git" },
   homepage: "https://www.runconvert.com/docs",
 }
 
@@ -57,7 +57,7 @@ for (const a of binaries) {
     join(dir, "package.json"),
     JSON.stringify({ name, ...meta, description: `runconvert for ${os} ${cpu}`, os: [os], cpu: [cpu], files: ["bin"], preferUnplugged: true }, null, 2),
   )
-  writeFileSync(join(dir, "README.md"), `The ${os} ${cpu} build of [runconvert](https://www.npmjs.com/package/runconvert). Install \`runconvert\` instead.\n`)
+  writeFileSync(join(dir, "README.md"), `The ${os} ${cpu} build of [@runconvert/cli](https://www.npmjs.com/package/@runconvert/cli). Install \`@runconvert/cli\` instead.\n`)
   publish(dir)
   optional[name] = version
 }
@@ -68,7 +68,7 @@ writeFileSync(
   join(main, "package.json"),
   JSON.stringify(
     {
-      name: "runconvert",
+      name: "@runconvert/cli",
       ...meta,
       description: "Convert files between 3,000+ formats from the terminal and AI apps (MCP) with RunConvert",
       keywords: ["file converter", "convert", "cli", "mcp", "mcp-server", "heic", "webp", "mp4", "mp3", "pdf"],
@@ -82,4 +82,4 @@ writeFileSync(
   ),
 )
 publish(main)
-console.log(`${dryRun ? "Dry run: would publish" : "Published"} runconvert ${version} and ${binaries.length} platform packages`)
+console.log(`${dryRun ? "Dry run: would publish" : "Published"} @runconvert/cli ${version} and ${binaries.length} platform packages`)
