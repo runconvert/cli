@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/runconvert/cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/api"
 )
 
 // tokenServer answers the token endpoint with the given replies in turn.

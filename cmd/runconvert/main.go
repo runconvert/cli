@@ -12,9 +12,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/runconvert/cli/internal/api"
-	"github.com/runconvert/cli/internal/auth"
-	"github.com/runconvert/cli/internal/tui"
+	"github.com/runconvert/runconvert-cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/auth"
+	"github.com/runconvert/runconvert-cli/internal/tui"
 )
 
 // version is set at build time: -ldflags "-X main.version=1.0.0".

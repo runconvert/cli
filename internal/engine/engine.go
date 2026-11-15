@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/runconvert/cli/internal/api"
-	"github.com/runconvert/cli/internal/catalog"
+	"github.com/runconvert/runconvert-cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/catalog"
 )
 
 // Input is one thing to convert: a local file or a URL.

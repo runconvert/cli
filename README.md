@@ -99,7 +99,7 @@ one conversion's options), `convert`, `get_job`, `account` (credits left).
 Read-only tools say so, as the Claude and ChatGPT directories require.
 
 The release workflow also publishes the remote server's image,
-`ghcr.io/runconvert/cli/mcp:<version>` (amd64 + arm64).
+`ghcr.io/runconvert/runconvert-cli/mcp:<version>` (amd64 + arm64).
 
 ## Development
 

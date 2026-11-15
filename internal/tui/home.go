@@ -12,10 +12,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/runconvert/cli/internal/api"
-	"github.com/runconvert/cli/internal/auth"
-	"github.com/runconvert/cli/internal/engine"
-	"github.com/runconvert/cli/internal/intent"
+	"github.com/runconvert/runconvert-cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/auth"
+	"github.com/runconvert/runconvert-cli/internal/engine"
+	"github.com/runconvert/runconvert-cli/internal/intent"
 )
 
 const confirmOver = 5 // a typed request for more files than this asks first

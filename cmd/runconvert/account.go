@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/runconvert/cli/internal/api"
-	"github.com/runconvert/cli/internal/auth"
+	"github.com/runconvert/runconvert-cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/auth"
 )
 
 func loginCmd() *cobra.Command {

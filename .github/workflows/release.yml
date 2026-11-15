@@ -9,6 +9,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Waits for approval from a required reviewer of the "release" environment.
+    environment: release
     env:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
@@ -54,5 +56,5 @@ jobs:
           build-args: VERSION=${{ steps.v.outputs.version }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           tags: |
-            ghcr.io/runconvert/cli/mcp:${{ steps.v.outputs.version }}
-            ghcr.io/runconvert/cli/mcp:latest
+            ghcr.io/runconvert/runconvert-cli/mcp:${{ steps.v.outputs.version }}
+            ghcr.io/runconvert/runconvert-cli/mcp:latest

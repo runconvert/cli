@@ -17,9 +17,9 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/zalando/go-keyring"
 
-	"github.com/runconvert/cli/internal/api"
-	"github.com/runconvert/cli/internal/auth"
-	"github.com/runconvert/cli/internal/intent"
+	"github.com/runconvert/runconvert-cli/internal/api"
+	"github.com/runconvert/runconvert-cli/internal/auth"
+	"github.com/runconvert/runconvert-cli/internal/intent"
 )
 
 // fakeAPI knows heic (image) and mov (video); jobs finish at once. It records
